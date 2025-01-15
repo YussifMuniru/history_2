@@ -255,14 +255,11 @@ public function board_game(Array $draw_numbers,$lower_limit = 22){
         array_push($history_array, [self::WINNING_PERIOD_STR => $draw_period,self::DRAW_NUMBER_STR => implode(",",$draw_number),'sum' => $sum,"b_s" =>  $sum <= $lower_limit ? 'Small' : 'Big', 'o_e' => ($sum % 2 == 0)  ? 'Even' : 'Odd', 'dragon_tiger' => $dragon_tiger, 'stud' => studHistory_11x5($draw_number,$draw_period),'three_cards' => threeCardsHistory_11x5($draw_number)]);
         // array_push($history_array, ["draw_period" => $draw_period,"winning"=>implode(",",$draw_number),'sum' => $sum ]);
     }
-
-
-    return $history_array;
+return $history_array;
 
 }
 
-
-public function board_games(array $drawNumber): array {return board_game($drawNumber);} // end of render method. returns all the history for 3D.
+public function board_games(array $drawNumber): array {return self::board_game($drawNumber);} // end of render method. returns all the history for 3D.
 
 
 }
