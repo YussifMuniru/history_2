@@ -1,0 +1,9 @@
+DirectoryIndex index.php
+RewriteEngine On
+
+# Deliver the folder or file directly if it exists on the server
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all other requests to index.php
+RewriteRule ^ index.php [QSA,L]
