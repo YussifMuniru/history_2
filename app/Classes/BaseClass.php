@@ -14,6 +14,10 @@ class BaseClass extends Utils{
     protected static $fantan = "fantan";
     protected static $board_games = "board_games";
 
+    public function __construct(int $lottery_id = 0){
+
+    }
+
 public function sumPattern(Array $drawNumbers, int $index,int $slice) : int {
     // Slicing the array from index for the length of slice
     $slicedArray = array_slice($drawNumbers, $index, $slice);
@@ -426,7 +430,7 @@ public function fantan(array $draw_data):array{ return []; }
 public function board_games(array $draw_data):array{ return []; }
 
 // this generate's the history
-public function generate(int $lottery_id= 0 ,int $lottery_model = 0):array{
+public function generate(int $lottery_id= 0 ,int $lottery_model = 0):array {
      // generate data for Class5D chart
    try{
    if ($lottery_id > 0) {

@@ -246,14 +246,10 @@ public function board_game(Array $draw_numbers,$lower_limit = 22){
     $history_array = [];
 
     foreach($draw_numbers as $draw_obj){
-        $draw_number = $draw_obj[self::DRAW_NUMBER_STR];
-        $draw_period = $draw_obj[self::DRAW_PERIOD_STR];
+        $draw_number = $draw_obj['draw_number'];
+        $draw_period = $draw_obj['period'];
         $sum = array_sum($draw_number);
-        
-        $dragon_tiger = (intval($draw_number[0]) > intval($draw_number[4])) ? "Dragon" : "Tiger";
-        //TODO: this is the real solution, but using the one below for demo for Mr. Eben.
-        array_push($history_array, [self::WINNING_PERIOD_STR => $draw_period,self::DRAW_NUMBER_STR => implode(",",$draw_number),'sum' => $sum,"b_s" =>  $sum <= $lower_limit ? 'Small' : 'Big', 'o_e' => ($sum % 2 == 0)  ? 'Even' : 'Odd', 'dragon_tiger' => $dragon_tiger, 'stud' => studHistory_11x5($draw_number,$draw_period),'three_cards' => threeCardsHistory_11x5($draw_number)]);
-        // array_push($history_array, ["draw_period" => $draw_period,"winning"=>implode(",",$draw_number),'sum' => $sum ]);
+        array_push($history_array, ["draw_period" => $draw_period,"winning"=> implode(",",$draw_number),"b_s" =>  $sum <= $lower_limit ? 'Small' : 'Big', 'o_e' => ($sum % 2 == 0)  ? 'Even' : 'Odd','sum' => $sum ]);
     }
 
 
@@ -262,7 +258,7 @@ public function board_game(Array $draw_numbers,$lower_limit = 22){
 }
 
 
-public function board_games(array $drawNumber): array {return board_game($drawNumber);} // end of render method. returns all the history for 3D.
+public function board_games(array $drawNumber): array {return $this->board_game($drawNumber);} // end of render method. returns all the history for 3D.
 
 
 }
