@@ -3,7 +3,7 @@
 namespace App\Config;
 
 
-require_once("../../vendor/autoload.php");
+require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
 use PDO;
 use PDOException;
@@ -53,7 +53,7 @@ public static function fetch_all_lottery_ids(): array | string {
     $rows = $stmt->fetchAll(PDO::FETCH_OBJ);
     $results['lottery_ids'] = [];
     foreach ($rows as $row){
-    $stmt = $db->prepare("SELECT gt_id as lottery_id,game_group,name,lottery_model  FROM game_type WHERE seconds_per_issue = '{$row->seconds_per_issue}'");
+    $stmt = $db->prepare("SELECT gt_id as lottery_id,game_group,name  FROM game_type WHERE seconds_per_issue = '{$row->seconds_per_issue}'");
     $stmt->execute();
     $gt_id_rows = $stmt->fetchAll();
     foreach($gt_id_rows as $gt_id_row){

@@ -2,17 +2,29 @@
 
 namespace App\Classes;
 
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+    // Throw an Exception with the error message and details
+    throw new \Exception("$errstr in $errfile on line $errline", $errno);
+});
+
+use App\Logger\AppLogger;
+use App\Logger\LogLevel;
 use App\Utils\Utils;
 use App\Config\RedisClient;
 use App\Config\Database;
+ 
 
 class BaseClass extends Utils{
 
     // game type properties
-    protected static $standard = "standard";
-    protected static $two_sides = "two_sides";
-    protected static $fantan = "fantan";
-    protected static $board_games = "board_games";
+
+
+    protected $has_fantan = true;
+
+    protected $lottery_id ;
+    protected $game_group ;
+    protected $name;
+
 
 public function sumPattern(Array $drawNumbers, int $index,int $slice) : int {
     // Slicing the array from index for the length of slice
@@ -413,6 +425,86 @@ public static function isPrime($number) {
 }
 
 
+/**
+ * Determines if a number is big or small.
+ * @param num - The number to check.
+ * @param bigMin - The minimum value for a big number.
+ * @param bigMax - The maximum value for a big number.
+ * @param smallMin - The minimum value for a small number.
+ * @param smallMax - The maximum value for a small number.
+ * @returns A string "Big", "Small", or "Invalid input".
+ */
+public static function bigSmall(int $num, int $bigMin,int $bigMax,int $smallMin,int $smallMax): string {
+    if ($num >= $bigMin && $num <= $bigMax) {
+        return "Big";
+    } else if ($num >= $smallMin && $num <= $smallMax) {
+        return "Small";
+    } else if ($num === 810) {//happy8
+        return "Tie";
+    }  else if ($num === 49) {//mark6
+        return "Tie";
+    }else {
+        return "Invalid input";
+    }
+}
+
+/**
+ * Determines if a number is odd or even.
+ * @param num - The number to check.
+ * @returns A string "Odd" or "Even".
+ */
+public static function oddEven(int $num, $tie = null ): string {
+    if($num == $tie) return "Tie";
+    if ($num % 2 === 0) {
+        return "Even";
+    } else {
+        return "Odd";
+    }
+}
+
+public static 
+function modifiedCalculateBull_11x5($digits)
+{
+
+    $digits = array_map("intval", $digits);
+
+    if (count($digits) < 5) {
+        return "No Bull"; // Need at least 5 digits
+    }
+
+    // Try all combinations of three digits
+    for ($i = 0; $i < (count($digits) - 2); $i++) {
+        for ($j = $i + 1; $j < (count($digits) - 1); $j++) {
+            for ($k = $j + 1; $k < count($digits); $k++) {
+                if (self::isSumTen([$digits[$i], $digits[$j], $digits[$k]])) {
+                    // Sum the other two digits
+                    $remainingDigits = array_filter(
+                        $digits,
+                        function ($index) use ($i, $j, $k) {
+                            return $index !== $i && $index !== $j && $index !== $k;
+                        },
+                        ARRAY_FILTER_USE_KEY
+                    );
+                    $remainingSum = array_sum($remainingDigits);
+                    $lastDigit = $remainingSum % 10;
+
+                    // Check last digit of remaining sum
+                    if ($lastDigit === 0) {
+                        
+                        return "Bull Bull";
+                    } else {
+                        return "Bull " . $lastDigit;
+                    }
+                }
+            }
+        }
+    }
+
+    return "No Bull";
+    // If no valid combination was found, return "No Bull"
+    // return "No Bull";
+}
+
 // this will generate the history for std
 public function std(array $draw_data):array{ return []; }
 
@@ -425,11 +517,19 @@ public function fantan(array $draw_data):array{ return []; }
 // this will generate the history for board_games
 public function board_games(array $draw_data):array{ return []; }
 
-// this generate's the history
-public function generate(int $lottery_id= 0 ,int $lottery_model = 0):array{
-     // generate data for Class5D chart
+
+
+// generate and store the history data
+public function generate_and_store():array {
+    
    try{
-   if ($lottery_id > 0) {
+
+     $lottery_id = $this->lottery_id;
+
+    // all lottery ids should be greater than 0
+    if ($lottery_id > 0) {
+       
+        // fetch latest draw numbers from the database
         $db_results = Database::fetch_draw_numbers($lottery_id);
         $draw_data = $db_results['data'];
 
@@ -437,20 +537,30 @@ public function generate(int $lottery_id= 0 ,int $lottery_model = 0):array{
         $latest_draw_period = isset($draw_data[0]) ? "{$draw_data[0][self::DRAW_PERIOD_STR]}" : "";
         $redis = new RedisClient();
         $redis->updateLatestDrawPeriod($lottery_id,$latest_draw_period);
-       
-        if ($lottery_model == 1) {
-            return [self::$standard => $this->std($draw_data), self::$two_sides => $this->two_sides($draw_data)];
-        } else if($lottery_model == 2){
-            return [self::$fantan => $this->fantan($draw_data)];
-        } else {
-            return [self::$board_games => $this->board_games($draw_data)];
+        $history = [];
+
+        // differentiate between the histories with fantan and those without fantan
+        if ($this->has_fantan) {
+             $history = [self::STANDARD . "_" . $lottery_id => json_encode($this->std($draw_data)), self::TWO_SIDES . "_" . $lottery_id  => json_encode($this->two_sides($draw_data)),self::BOARD_GAMES . "_" . $lottery_id  => json_encode($this->board_games($draw_data)),self::FANTAN . "_" . $lottery_id  => json_encode($this->fantan($draw_data))];
+            
+        }  else {
+            $history = [self::STANDARD . "_" . $lottery_id  => json_encode($this->std($draw_data)), self::TWO_SIDES . "_" . $lottery_id  => json_encode($this->two_sides($draw_data)),self::BOARD_GAMES . "_" . $lottery_id  => json_encode($this->board_games($draw_data))];
         }   
+
+        // store the generated history in the redis cache
+        $redis->bulk_store($history);
+
+
+        // return the history 
+        return $history;
     } else {
-        return  ['status' => false];
+        // log an error if the lottery id is less than 1
+      AppLogger::customError(LogLevel ::ERROR,100, "The lottery ID for " );
     }
       
  }catch(\Exception $e){
-    AppLogger ::error(LogLevel ::ERROR, $e);
+
+    AppLogger::error(LogLevel ::ERROR, $e); // log any thrown exceptions within the code
 }
 }
 

@@ -22,6 +22,18 @@ use App\Logger\LogLevel;
 class Class5D extends BaseClass{
 
 
+     protected $lottery_id ;
+     protected $game_group ;
+     protected $name ;
+
+
+
+public function __construct(object $game_type){
+    $this->lottery_id = $game_type->lottery_id;
+    $this->game_group    = $game_type->game_group;
+    $this->name          = $game_type->name;
+}
+
 public function all5History(array $drawNumbers): array {
 $patterns = ['g120' => [1, 1, 1, 1, 1], 'g60' => [2, 1, 1, 1], 'g30' => [2, 2, 1], 'g20' => [3, 1, 1], 'g10' => [3, 2], 'g5' => [4, 1]];
 $counts = array_fill_keys(array_keys($patterns), 1);
@@ -438,11 +450,6 @@ public function board_game_5D(Array $draw_numbers,$lower_limit = 22){
 }
 
 
-public function board_games(array $drawNumber): array
-{
-    return $this->board_game_5D($drawNumber);
-} // end of render5d. Returns all the history for 5D.
-
 
 
 public function two_sides_rapido(array $draw_numbers): array
@@ -509,32 +516,6 @@ public function two_sides_rapido(array $draw_numbers): array
 }
 
 
-public function fantan(array $draw_data):array
-{
-
-    $final_res = [];
-
-    foreach ($draw_data as $key => $data) {
-        $res = [];
-        $drawNumber = $data[self::DRAW_NUMBER_STR];
-        $draw_period = $data[self::DRAW_PERIOD_STR];
-        $DRAW_NUMBERS = array_map('intval', $drawNumber);
-        $SUM_OF_DRAW_NUMBERS = array_sum($DRAW_NUMBERS);
-
-        $sum_of_three = array_sum(array_slice($DRAW_NUMBERS, 2));
-        $res[self::WINNING_NUMBER_STR] = $drawNumber;
-        $res[self::WINNING_PERIOD_STR] = $draw_period;
-
-        $res['sum'] = (string)$SUM_OF_DRAW_NUMBERS;
-        $res['sum_last_three'] = (string)array_sum(array_slice($drawNumber, -3, 3));
-        $res['big_small'] = self::fantanBigSmall($SUM_OF_DRAW_NUMBERS, 23, 45, 0, 22);
-        $res['odd_even'] = self::fantanOddEven($SUM_OF_DRAW_NUMBERS);
-        $res['only_fantan2'] = self::onlyFantan2($sum_of_three)[0];
-        $res['dragon_tiger'] = (intval($drawNumber[0]) > intval($drawNumber[4])) ? "Dragon" : ( (intval($drawNumber[0]) < intval($drawNumber[4])) ? "Tiger" : "Tie");
-        $final_res[] = $res;
-    }
-    return $final_res;
-}
 
 public function std(array $drawNumber): array {
 
@@ -567,41 +548,38 @@ public function  two_sides(array $drawNumber): array
 } // end of render5d. Returns all the history for 5D.
 
 
-// public function generate(int $lottery_id = 0, int $lottery_model = 0){
+public function board_games(array $drawNumber): array
+{
+    return $this->board_game_5D($drawNumber);
+} // end of render5d. Returns all the history for 5D.
 
 
-//    // generate data for Class5D chart
-//    try{
-//    if ($lottery_id > 0) {
-//         $db_results = Database::fetch_draw_numbers($lottery_id);
-//         $draw_data = $db_results['data'];
+public function fantan(array $draw_data):array
+{
 
-//         // save the latest draw period to Redis
-//         $latest_draw_period = isset($draw_data[0]) ? "{$draw_data[0][self::$DRAW_PERIOD_STR]}" : "";
-//         $redis = new RedisClient();
-//         $redis->updateLatestDrawPeriod($lottery_id,$latest_draw_period);
-       
-//         if ($lottery_model == 1) {
-//             return [self::$standard => $this->render5d($draw_data), self::$two_sides => $this->two_sides_render_5d($draw_data)];
-//         } else if($lottery_model == 2){
-//             return [self::$fantan => $this->fantan_fiveD($draw_data)];
-//         } else {
-//             return [self::$board_games => $this->board_games_render_5d($draw_data)];
-//         }   
-//     } else {
-//         return  ['status' => false];
-//     }
-      
-//  }catch(\Exception $e){
-//     AppLogger ::error(LogLevel ::ERROR, $e);
-// }
-// }
+    $final_res = [];
 
+    foreach ($draw_data as $key => $data) {
+        $res = [];
+        $drawNumber = $data[self::DRAW_NUMBER_STR];
+        $draw_period = $data[self::DRAW_PERIOD_STR];
+        $DRAW_NUMBERS = array_map('intval', $drawNumber);
+        $SUM_OF_DRAW_NUMBERS = array_sum($DRAW_NUMBERS);
 
+        $sum_of_three = array_sum(array_slice($DRAW_NUMBERS, 2));
+        $res[self::WINNING_NUMBER_STR] = $drawNumber;
+        $res[self::WINNING_PERIOD_STR] = $draw_period;
 
-
-
-
+        $res['sum'] = (string)$SUM_OF_DRAW_NUMBERS;
+        $res['sum_last_three'] = (string)array_sum(array_slice($drawNumber, -3, 3));
+        $res['big_small'] = self::fantanBigSmall($SUM_OF_DRAW_NUMBERS, 23, 45, 0, 22);
+        $res['odd_even'] = self::fantanOddEven($SUM_OF_DRAW_NUMBERS);
+        $res['only_fantan2'] = self::onlyFantan2($sum_of_three)[0];
+        $res['dragon_tiger'] = (intval($drawNumber[0]) > intval($drawNumber[4])) ? "Dragon" : ( (intval($drawNumber[0]) < intval($drawNumber[4])) ? "Tiger" : "Tie");
+        $final_res[] = $res;
+    }
+    return $final_res;
+}
 
 
 
@@ -609,7 +587,113 @@ public function  two_sides(array $drawNumber): array
 
 
 
-  //-----------------Helper Methods-------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
