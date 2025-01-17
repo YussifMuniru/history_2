@@ -47,9 +47,17 @@ class ClassMark6 extends BaseClass{
      const  ZODIAC_BLUE_BALLS =  ["03", "04", "09", "10", "14", "15", "20", "25", "26", "31", "36", "37", "41", "42", "47", "48"];
      const  ZODIAC_GREEN_BALLS = ["05", "06", "11", "16", "17", "21", "22", "27", "28", "32", "33", "38", "39", "43", "44", "49"];
 
-     public function __contruct($lottery_id = 0){
-        parent::__contruct($lottery_id);
-     }
+     protected $lottery_id ;
+     protected $game_group ;
+     protected $name ;
+
+
+
+public function __construct(object $game_type){
+    $this->lottery_id = $game_type->lottery_id;
+    $this->game_group    = $game_type->game_group;
+    $this->name          = $game_type->name;
+}
 
 public function winning_number_mark6(array $drawNumbers): array
 {
@@ -195,7 +203,7 @@ public function form_sum_of_extra_h_and_t(array $drawNumbers): array
             $sum_extra_ball = array_sum(str_split($extra_ball));
             $b_s = intval($extra_ball) == 49 ? "Tie" : (($sum_extra_ball >= 1 && $sum_extra_ball <= 6) ?  "S" : "B");
             $o_e  = ($sum_extra_ball % 2 === 1) ?  "O" : "E";
-            $form = ["b" => "Big", "s" => "Small", "o" => "Odd", "e" => "Even"];
+            $form = ["b" => "Big", "s" => "Small", "o" => "Odd", "e" => "Even","tie"=> "Tie"];
             $result[] = [self::WINNING_PERIOD_STR => $draw_period, self::WINNING_NUMBER_STR  => implode(',', $value), "Ball_1" => $value[0], "Ball_2" => $value[1], "Ball_3" => $value[2], "Ball_4" => $value[3], "Ball_5" => $value[4], "Ball_6" => $value[5], "Extra_Ball" => $extra_ball, "sum" => $extra_ball, "form" => $form[strtolower($b_s)] . " " . $form[strtolower($o_e)]];
         } catch (\Exception $e) {
             //throw $th;
@@ -391,7 +399,7 @@ public function two_consec_tail(array $drawNumbers): array
             $drawNumber  = $item[self::DRAW_NUMBER_STR];
             $draw_period = $item[self::DRAW_PERIOD_STR];
 
-            $res = get_tail($drawNumber);
+            $res = self::get_tail($drawNumber);
 
             $historyArray[] = [self::WINNING_PERIOD_STR => $draw_period, "Ball_1" => $drawNumber[0], "Ball_2" => $drawNumber[1], "Ball_3" => $drawNumber[2], "Ball_4" => $drawNumber[3], "Ball_5" => $drawNumber[4], "Ball_6" => $drawNumber[5], "Extra_Ball" => $drawNumber[6], "tail" => $res];
         } catch (\Exception $e) {
@@ -506,9 +514,6 @@ public function board_game( Array $draw_numbers){
  
  }
 
-
-
-
 // Odd_Even Big_Small
 public function std(array $drawNumber): array{
     $zodiacs = self::generate_zodiac_numbers();
@@ -526,7 +531,7 @@ public function std(array $drawNumber): array{
         'conv'                  => $this->winning_number_mark6($drawNumber),
         'extra_no_2_sides'      => ["two_sides" => $this->form_extra_no($drawNumber), "no" => $this->winning_number_mark6($drawNumber), "all_color" => $this->color_balls($drawNumber, 24), "special_zodiac_h_t" => $this->extra_no_head_tail_no($drawNumber), "combo_zodiac" => $this->winning_number_mark6($drawNumber), "five_elements" =>  $this->five_elements($drawNumber,)],
         'ball_no_2_sides'       => ["pick_1_ball_no" => $this->winning_number_mark6($drawNumber), "ball_no_1_1" => $this->winning_number_mark6($drawNumber), "one_zodiac_color_balls" => $this->extra_n_ball_color($drawNumber)],
-        'specific_no'           => ["fixed_place_ball_1" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_2" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_3" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_4"    => winning_number_mark6($drawNumber), "fixed_place_ball_5" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_6" => $this->winning_number_mark6($drawNumber)],
+        'specific_no'           => ["fixed_place_ball_1" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_2" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_3" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_4"    => $this->winning_number_mark6($drawNumber), "fixed_place_ball_5" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_6" => $this->winning_number_mark6($drawNumber)],
         'row_zodiac_row_tail'   => ["two_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "three_consec_zodiac" => $this->winning_number_mark6($drawNumber), "four_consec_zodiac" => $this->winning_number_mark6($drawNumber), "five_consec_zodiac" => $this->winning_number_mark6($drawNumber), "second_consec_tail_no" => $this->two_consec_tail($drawNumber), "third_consec_tail_no" => $this->two_consec_tail($drawNumber), "fourth_consec_tail_no" => $this->two_consec_tail($drawNumber), "five_consec_tail_no" => $this->two_consec_tail($drawNumber)],
         "row_no"                => ["win_2_3" =>      $this->winning_number_mark6($drawNumber), "win_3_3" => $this->winning_number_mark6($drawNumber), "win_2_2" =>      $this->winning_number_mark6($drawNumber), "two_no"  => $this->winning_number_mark6($drawNumber), "win_extra_no" => $this->winning_number_mark6($drawNumber), "win_4_4" => $this->winning_number_mark6($drawNumber)],
         "zodiac_and_tail"       => $this->sum_zodiac($drawNumber, ),
@@ -569,11 +574,11 @@ public function two_sides(array $drawNumber): array
 // Odd_Even Big_Small
 public function board_games(array $drawNumber): array
 {
-    return  board_game($drawNumber);
+    return  self::board_game($drawNumber);
 }
 
 public function fantan(array $draw_data): array {
-     $zodiacs = self::generate_zodiac_numbers();
+    $zodiacs = self::generate_zodiac_numbers();
     $final_res = [];
     foreach($draw_data as $data){
     $draw_number = $data['draw_number'];
@@ -626,7 +631,7 @@ public function fantan(array $draw_data): array {
     $draw_number      = array_map('intval', $draw_number);
    
     $res['zodiacs'] = $zodiac;
-    $res['big_small'] =  bigSmall($extra_number, 25, 48, 1, 24);
+    $res['big_small'] =  self::bigSmall($extra_number, 25, 48, 1, 24);
     $res['odd_even']  =  $extra_number % 2 == 0 ? "Even" : "Odd";
     $final_res[] = $res;
  }
@@ -657,7 +662,7 @@ public static function generate_zodiac_numbers(): array{
      $zodiacs = [];
      for ($i=1; $i < 13; $i++) { 
     # code...
-    $zodiacs[self::ZODIAC_NAMES[$i]] = self::generateArray($i);
+    $zodiacs[self::ZODIAC_NAMES[$i - 1]] = self::generateArray($i);
    }
    return $zodiacs;
 }
@@ -665,7 +670,7 @@ public static function generate_zodiac_numbers(): array{
 public static function generateArray($position)
 {
     $current_chinese_zodiac = 5;
-    $sequenceMappingData = generateMapping($current_chinese_zodiac);
+    $sequenceMappingData = self::generateMapping($current_chinese_zodiac);
     $finalResults = [];
     $maxArrayLoop = $sequenceMappingData[$position] === 1 ? 5 : 4;
 
@@ -694,6 +699,17 @@ public static function generateMapping($start)
     }
 
     return $mapping;
+}
+
+public static function get_tail($drawNumber){
+    $res = [];
+    foreach ($drawNumber as $value) {
+        $last_digit = str_split($value)[1];
+        $res[] = intval($last_digit);
+    }
+
+    sort($res);
+    return implode(",", array_unique($res));
 }
 
 }

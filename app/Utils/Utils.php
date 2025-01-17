@@ -14,4 +14,9 @@ class Utils {
     const WINNING_NUMBER_STR  = "winning";
     const WINNING_PERIOD_STR = "draw_period";
 
+    const STANDARD    = "standard";
+    const TWO_SIDES   = "twosides";
+    const FANTAN      = "fantan";
+    const BOARD_GAMES = "boardgames";
+
 }
