@@ -3,7 +3,7 @@
         'name' => 'history/side_history',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'e45e9f0d5be6785c09438ff331a542e452c1b054',
+        'reference' => '58a805fb89be740965f0d81ca8cb20be4c7aab2a',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'flightphp/core' => array(
-            'pretty_version' => 'v3.13.0',
-            'version' => '3.13.0.0',
-            'reference' => '1307e8a39d89fadba69d0c2dad53b6e0da83fd96',
+            'pretty_version' => 'v3.13.1',
+            'version' => '3.13.1.0',
+            'reference' => 'da6540bbdd3b64a28de0606da7b530d0013f281c',
             'type' => 'library',
             'install_path' => __DIR__ . '/../flightphp/core',
             'aliases' => array(),
@@ -31,7 +31,7 @@
         'history/side_history' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'e45e9f0d5be6785c09438ff331a542e452c1b054',
+            'reference' => '58a805fb89be740965f0d81ca8cb20be4c7aab2a',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
