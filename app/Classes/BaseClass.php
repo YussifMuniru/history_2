@@ -2,16 +2,13 @@
 
 namespace App\Classes;
 
-set_error_handler(function ($errno, $errstr, $errfile, $errline) {
-    // Throw an Exception with the error message and details
-    throw new \Exception("$errstr in $errfile on line $errline", $errno);
-});
+  
 
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
+use App\Storage\Logs\AppLogger;
+use App\Storage\Logs\LogLevel;
 use App\Utils\Utils;
-use App\Config\RedisClient;
-use App\Config\Database;
+use App\Services\RedisClient;
+use App\Services\Database;
  
 
 class BaseClass extends Utils{
@@ -25,6 +22,10 @@ class BaseClass extends Utils{
     protected $game_group ;
     protected $name;
 
+
+public static function b_s_with_tie($num, $lower_limit=174,$upper_limit=176,$tie =175){
+  return $num <= $lower_limit ? "S" : ($num >=$upper_limit ? "B" : "Tie");
+}
 
 public function sumPattern(Array $drawNumbers, int $index,int $slice) : int {
     // Slicing the array from index for the length of slice
@@ -87,8 +88,6 @@ public static function bigSmallOddEvenPattern3($drawNumbers, $start, int $slice,
     // Return the concatenated result
     return ["sum" => $sum, "num1" => $first2, "num2" => $last2, "num3"  => $last3];
 } // end of bigSmallOddEvenPattern3
-
-
 
 public static function sumAndFindPattern($drawNumbers, $index, $slice, $range, $prefix)
 {
@@ -534,7 +533,7 @@ public function generate_and_store():array {
         $draw_data = $db_results['data'];
 
         // save the latest draw period to Redis
-        $latest_draw_period = isset($draw_data[0]) ? "{$draw_data[0][self::DRAW_PERIOD_STR]}" : "";
+        $latest_draw_period = isset($draw_data[0]) ? $draw_data[0][self::DRAW_PERIOD_STR] : "";
         $redis = new RedisClient();
         $redis->updateLatestDrawPeriod($lottery_id,$latest_draw_period);
         $history = [];
@@ -550,18 +549,18 @@ public function generate_and_store():array {
         // store the generated history in the redis cache
         $redis->bulk_store($history);
 
-
         // return the history 
-        return $history;
+        return  $history;
     } else {
         // log an error if the lottery id is less than 1
       AppLogger::customError(LogLevel ::ERROR,100, "The lottery ID for " );
     }
-      
+    
  }catch(\Exception $e){
-
     AppLogger::error(LogLevel ::ERROR, $e); // log any thrown exceptions within the code
 }
+      return ["status"=> "Error", "message"=> "Internal Server Error."];
+
 }
 
 

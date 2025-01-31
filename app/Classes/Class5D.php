@@ -4,18 +4,12 @@ namespace App\Classes;
 
 
 
-require_once("../../vendor/autoload.php");
+require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
 
 // import the base class
 use App\Classes\BaseClass;
-// import the database
-use App\Config\Database;
-// import the redis cache
-use App\Config\RedisClient;
-// import the logger service
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
+
 
 
 // create a class for 5D
@@ -42,7 +36,7 @@ $drawNumbers  = array_reverse($drawNumbers);
 foreach ($drawNumbers as  $item) {
     $mydata = [];
     foreach ($patterns as $patternKey => $pattern) {
-        $mydata[$patternKey] = self::findPattern($pattern, $item["draw_number"], 0, 5) ? $patternKey : $counts[$patternKey];
+        $mydata[$patternKey] = self::findPattern($pattern, $item[self::DRAW_NUMBER_STR], 0, 5) ? $patternKey : $counts[$patternKey];
         $counts[$patternKey] = ($mydata[$patternKey] === $patternKey) ? 1 : ($counts[$patternKey] + 1);
     }
     $mydata[self::WINNING_NUMBER_STR] = implode(",", $item[self::DRAW_NUMBER_STR]);
@@ -61,37 +55,34 @@ public function all4History(Array $drawNumbers,String $isFirst) : Array{
     $group6 = 1;
     $group4 = 1;
 
-    $historyArray = [];
-
-    foreach ($drawNumbers as $index => $draw_obj) {
+    $historyArray = array();
+    $drawNumbers = array_reverse($drawNumbers);
+    foreach ($drawNumbers as $draw_obj) {
         $draw_number = $draw_obj[self::DRAW_NUMBER_STR];
         $draw_period = $draw_obj[self::DRAW_PERIOD_STR];
-        // Assuming findPattern() is a function you've defined elsewhere
-        // and it has been converted to PHP as well.
-        $mydata = [
+        $mydata = array(
             'group24' => self::findPattern(array(1, 1, 1, 1), $draw_number, $isFirst == "all4first4" ? 0 : -4, 4) ? "group24" : $group24,
-            'group12' => self::findPattern(array(2, 1, 1), $draw_number, $isFirst == "all4first4" ? 0 : -4, 4) ? "group12" : $group12,
-            'group6' =>  self::findPattern(array(2, 2), $draw_number, $isFirst == "all4first4" ? 0 : -4, 4) ? "group6" : $group6,
-            'group4' =>  self::findPattern(array(3, 1), $draw_number, $isFirst == "all4first4" ? 0 : -4, 4) ? "group4" : $group4,
-        ];
-        
-        $mydata[self::WINNING_NUMBER_STR] = implode(",",$draw_number);
-        $mydata[self::WINNING_PERIOD_STR] = $draw_period;
+            'group12' => self::findPattern(array(2, 1, 1), $draw_number,    $isFirst == "all4first4" ? 0 : -4, 4) ? "group12" : $group12,
+            'group6' =>  self::findPattern(array(2, 2), $draw_number,        $isFirst == "all4first4" ? 0 : -4, 4) ? "group6" : $group6,
+            'group4' =>  self::findPattern(array(3, 1), $draw_number,        $isFirst == "all4first4" ? 0 : -4, 4) ? "group4" : $group4,
+        );
 
-        array_unshift($historyArray, $mydata);
+        $mydata[self::WINNING_NUMBER_STR] = implode(",", $draw_number);
+        $mydata[self::WINNING_PERIOD_STR] = $draw_period;
+        $draw_number   = array_slice($draw_number, $isFirst == "all4first4" ? 0 : -4, 4);
+        $mydata['dup'] = count(array_unique($draw_number)) !== count($draw_number) ? self::findDuplicates($draw_number) : '';
+
+        array_push($historyArray, $mydata);
         $currentPattern = array_values($mydata);
         sort($currentPattern);
         $currentPattern = $currentPattern[5];
-        // $currentPattern = $mydata[array_keys($mydata)[count($mydata) - 1]]; // Adjusted to PHP logic
-        // Note: Adjust this logic if it doesn't match your JavaScript function's intent
-
         $group24 = $currentPattern == "group24" ? 1 : $group24 += 1;
         $group12 = $currentPattern == "group12" ? 1 : $group12 += 1;
-        $group6 = $currentPattern == "group6" ? 1 : $group6 += 1;
-        $group4 = $currentPattern == "group4" ? 1 : $group4 += 1;
+        $group6  = $currentPattern == "group6" ? 1  : $group6 += 1;
+        $group4  = $currentPattern == "group4" ? 1  : $group4 += 1;
     }
 
-    return $historyArray;
+    return array_reverse($historyArray);
 }// end of all4History: ["g120"..."g5"]
 
 
@@ -220,26 +211,38 @@ public function bsoeHistory($drawNumbers, $typeOfModule){
 
 public function dragonTigerHistory(array $drawNumbers): array
 {
-    $historyArray = [];
+     $historyArray = [];
+
+
     foreach ($drawNumbers as  $item) {
+
         $draw_number = $item[self::DRAW_NUMBER_STR];
         $draw_period = $item[self::DRAW_PERIOD_STR];
 
         // Assuming dragonTigerTiePattern is a function you have defined in PHP
-        $mydata = [];
-        for ($i = 0; $i < 4; $i++) {
-        for ($j = $i + 1; $j < 5; $j++) {
-            $key = "{$i}x{$j}";
-            $mydata[$key] = self::dragonTigerTiePattern($i, $j, $draw_number); 
-        }
-    }
+        $mydata = [
+            'onex2' =>   self::dragonTigerTiePattern(0, 1, $draw_number),
+            'onex3' =>   self::dragonTigerTiePattern(0, 2, $draw_number),
+            'onex4' =>   self::dragonTigerTiePattern(0, 3, $draw_number),
+            'onex5' =>   self::dragonTigerTiePattern(0, 4, $draw_number),
+            'twox3' =>   self::dragonTigerTiePattern(1, 2, $draw_number),
+            'twox4' =>   self::dragonTigerTiePattern(1, 3, $draw_number),
+            'twox5' =>   self::dragonTigerTiePattern(1, 4, $draw_number),
+            'threex4' => self::dragonTigerTiePattern(2, 3, $draw_number),
+            'threex5' => self::dragonTigerTiePattern(2, 4, $draw_number),
+            'fourx5' =>  self::dragonTigerTiePattern(3, 4, $draw_number)
+        ];
+
         $mydata[self::WINNING_NUMBER_STR] = implode(",", $draw_number);
         $mydata[self::WINNING_PERIOD_STR] = $draw_period;
+
         array_push($historyArray, $mydata);
     }
 
     return $historyArray;
 }
+
+
 
 public function winning_number5d(array $draw_numbers): array{
 
@@ -268,9 +271,8 @@ public function studHistory(array $drawNumbers): array {
     $drawNumbers = array_reverse($drawNumbers);
 
     foreach ($drawNumbers as  $item) {
-        $draw_number = $item[self::DRAW_NUMBER_STR];
-        $draw_period = $item[self::DRAW_PERIOD_STR];
-
+        $draw_number = $item['draw_number'];
+        $draw_period = $item['period'];
 
         // Assuming findPattern and findStreakPattern5D are defined in PHP
         $mydata = array(
@@ -283,13 +285,12 @@ public function studHistory(array $drawNumbers): array {
             'gourd'         => self::findPattern(array(3, 2), $draw_number, 0, 5) ? "Gourd" : $gourd
         );
 
-        $mydata[self::WINNING_NUMBER_STR] = implode(",", $draw_number);
-        $mydata[self::WINNING_PERIOD_STR] = $draw_period;
-
         $currentPattern = array_values($mydata);
         sort($currentPattern);
-        $currentPattern = $currentPattern[8];
-        $mydata         = [];
+         $currentPattern = $currentPattern[6];
+        $mydata = [];
+        $mydata["winning"] = implode(",", $draw_number);
+        $mydata["draw_period"] = $draw_period;
         $mydata['stud'] = $currentPattern;
         array_push($historyArray, $mydata);
 
@@ -567,7 +568,7 @@ public function fantan(array $draw_data):array
         $SUM_OF_DRAW_NUMBERS = array_sum($DRAW_NUMBERS);
 
         $sum_of_three = array_sum(array_slice($DRAW_NUMBERS, 2));
-        $res[self::WINNING_NUMBER_STR] = $drawNumber;
+        $res[self::WINNING_NUMBER_STR] = implode(",",$drawNumber);
         $res[self::WINNING_PERIOD_STR] = $draw_period;
 
         $res['sum'] = (string)$SUM_OF_DRAW_NUMBERS;

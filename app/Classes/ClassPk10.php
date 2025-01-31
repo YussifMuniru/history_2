@@ -1,21 +1,11 @@
 <?php
 
 namespace App\Classes;
-
-
-
-require_once("../../vendor/autoload.php");
+require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
 
 // import the base class
 use App\Classes\BaseClass;
-// import the database
-use App\Config\Database;
-// import the redis cache
-use App\Config\RedisClient;
-// import the logger service
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
 
 
 // create a class for 5D
@@ -48,6 +38,7 @@ public function winning_number(Array $draw_numbers) : array{
 
 public function dragon_tiger_history(Array $drawNumbers) {
     $historyArray = array();
+    
     foreach ($drawNumbers as $item) {
         $draw_number = $item[self::DRAW_NUMBER_STR];
         $draw_period = $item[self::DRAW_PERIOD_STR];
@@ -62,7 +53,7 @@ public function dragon_tiger_history(Array $drawNumbers) {
             'fourx7' =>  self::dragonTigerTiePattern(3, 6, $draw_number),
             'fivex6' =>  self::dragonTigerTiePattern(4, 5, $draw_number),
             );
-        array_unshift($historyArray, $mydata);
+        array_push($historyArray, $mydata);
     }
     return $historyArray;
 }
@@ -82,7 +73,7 @@ foreach ($drawNumbers as $key => $item) {
             array_push($pos_key, [$pos[$key] => $b_s . " " . $o_e]);
          }
         $res['pos'] = $pos_key;
-        array_unshift($historyArray,$res);
+        array_push($historyArray,$res);
     }   
     return $historyArray;
 }
@@ -96,7 +87,7 @@ public function b_s_o_e_of_sum_of_top_two(Array $drawNumbers) {
         $sum = array_sum($value);
         $b_s = ($sum >= 12) ? "B" : "S";
         $o_e = ($sum % 2 === 1) ? "O" : "E";
-        array_unshift($historyArray,[self::WINNING_PERIOD_STR => $draw_period,self::WINNING_NUMBER_STR => implode(",", $value), "sum"=>$sum, "b_s" =>$b_s, "o_e" => $o_e]);
+        array_push($historyArray,[self::WINNING_PERIOD_STR => $draw_period,self::WINNING_NUMBER_STR => implode(",", $value), "sum"=>$sum, "b_s" =>$b_s, "o_e" => $o_e]);
     }   
     return $historyArray;
 }
@@ -109,7 +100,7 @@ public function sum_of_top_two(Array $drawNumbers) {
             $value       = $item['draw_number'];
             $draw_period = $item['period'];
             $sum = array_sum(array_slice($value,0,2));
-            array_unshift( $historyArray, ['draw_period'=>$draw_period,"winning" => implode(",", $value), "sum"=>$sum]);
+            array_push( $historyArray, ['draw_period'=>$draw_period,"winning" => implode(",", $value), "sum"=>$sum]);
     }   
     return $historyArray;
 }
@@ -123,7 +114,7 @@ public function sum_of_top_three(Array $drawNumbers) {
             $value = $item[self::DRAW_NUMBER_STR];
             $draw_period = $item[self::DRAW_PERIOD_STR];
             $sum = array_sum(array_slice($value,0,3));
-            array_unshift( $historyArray, [self::WINNING_PERIOD_STR=>$draw_period,self::WINNING_NUMBER_STR => implode(",", $value), "sum"=>$sum]);
+            array_push( $historyArray, [self::WINNING_PERIOD_STR=>$draw_period,self::WINNING_NUMBER_STR => implode(",", $value), "sum"=>$sum]);
     }   
     return $historyArray;
 }
@@ -132,13 +123,11 @@ public function sum_of_top_three(Array $drawNumbers) {
 public function pk_10_two_sides(Array $draw_numbers) : Array{
 
     $historyArray = [];
-
     foreach ($draw_numbers as $item) {
         $value       = $item[self::DRAW_NUMBER_STR];
         $draw_period = $item[self::DRAW_PERIOD_STR];
         $sum         = $value[0] + $value[1];
-
-        array_unshift($historyArray, [self::WINNING_PERIOD_STR=>$draw_period,self::WINNING_NUMBER_STR=>implode(",",$value),"sum"=>$sum,"b_s"=> $sum > 11 ? "B":"S","o_e" => $sum % 2 == 0 ? "E":"O"]);
+        array_push($historyArray, [self::WINNING_PERIOD_STR=>$draw_period,self::WINNING_NUMBER_STR=>implode(",",$value),"sum"=>$sum,"b_s"=> $sum > 11 ? "B":"S","o_e" => $sum % 2 == 0 ? "E":"O"]);
     }
 
     return $historyArray;
@@ -177,7 +166,7 @@ public function fantan(array $drawNumbers):array{
     $draw_number  = array_map('intval', $draw_number);
     $sum_of_three = array_sum(array_slice($draw_number, 0, 3));
    
-    $res[self::WINNING_NUMBER_STR] = $draw_number;
+    $res[self::WINNING_NUMBER_STR] = implode(",",$draw_number);
     $res[self::WINNING_PERIOD_STR] = $draw_period;
    
     

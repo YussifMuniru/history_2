@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Config;
+namespace App\Services;
 
 
 require_once('C:/xampp/htdocs/history/vendor/autoload.php');

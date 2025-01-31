@@ -4,18 +4,12 @@ namespace App\Classes;
 
 
 
-require_once("../../vendor/autoload.php");
+require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
 
 // import the base class
 use App\Classes\BaseClass;
-// import the database
-use App\Config\Database;
-// import the redis cache
-use App\Config\RedisClient;
-// import the logger service
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
+
 
 
 // create a class for 5D
@@ -214,10 +208,11 @@ public function all3TwoSidesHistory(array $drawNumbers): array
         ];
         array_push($historyArray, $mydata);
         $currentPattern = array_values($mydata);
+        // print_r($currentPattern);
         sort($currentPattern);
-        $currentPattern = $currentPattern[3];
-        $group6 = $currentPattern == "group6" ? 1 : $group6 + 1;
-        $group3 = $currentPattern == "group3" ? 1 : $group3 + 1;
+        $currentPattern = $currentPattern[4];
+        $group6 = $currentPattern == "group6" ? 1 : $group6 += 1;
+        $group3 = $currentPattern == "group3" ? 1 : $group3 += 1;
     }
 
     return array_reverse($historyArray);

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Logger;
+namespace App\Storage\Logs;
 
 require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 

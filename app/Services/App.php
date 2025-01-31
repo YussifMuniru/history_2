@@ -5,9 +5,9 @@ namespace App\Services;
 require_once("c:/xampp/htdocs/history/vendor/autoload.php");
 
 
-use App\Config\Database;
-use App\Config\RedisClient;
-use App\Logger\AppLogger;
+use App\Services\Database;
+use App\Services\RedisClient;
+use App\Storage\Logs\AppLogger;
 
 
 

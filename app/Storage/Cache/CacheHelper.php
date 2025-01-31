@@ -2,10 +2,10 @@
 
 namespace App\Storage\Cache ;
 
-use App\Config\Database;
-use App\Config\RedisClient;
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
+use App\Services\Database;
+use App\Services\RedisClient;
+use App\Storage\Logs\AppLogger;
+use App\Storage\Logs\LogLevel;
 
 class CacheHelper {
     public static function get($key) {
@@ -28,49 +28,41 @@ public static function getRedisClient() {
      return new RedisClient(); 
 }
     
-public static function cache_history($game_types = []):array
+public static function cache_history($game_types = []):mixed
 {
+       
         $history_data = [];
+        $resultant_history = [];
         $history_obj = "";
         try{
+            
            foreach($game_types as $game_type){
                 if(trim($game_type->game_group) === "pc28") continue;
-               $history_class = "App\Classes\\Class".strtoupper($game_type->game_group);
-               if(class_exists($history_class) && method_exists($history_class,"generate_and_store")){
-
+                $history_class = "App\Classes\\Class".strtoupper($game_type->game_group);
+                if(class_exists($history_class) && method_exists($history_class,"generate_and_store")){
                 $history_obj = new $history_class($game_type);
                 // Generate and store the history data   
-               $history_data = $history_obj->generate_and_store();
+                $history_data = $history_obj->generate_and_store();
+                    
+            //    if(isset($history_data[$flag])){
+            //     $resultant_history = $history_data[$flag];
+            //    } 
                 }else{
+                    echo "Encountering an error but not logging";
                  AppLogger ::customError(LogLevel ::ERROR,1900, "No class or Method found for game group: {$game_type->game_group}");
-                continue;
+               continue;
                }
         }
-        return $history_data;
+        return $resultant_history;
     }catch(\Exception $e){
       AppLogger::error(LogLevel::ERROR, $e);
-      return ["error" => "Internal Server Error."];
+      return ["error" => "Internal Server Error.$e"];
     }finally{
+       
        unset($history_obj);
     }
 }
 
-
-public static function cache_history_bulk(array $history_data): array
-{
-
-    try {
-       
-        foreach ($history_data as $history_key => $history_data_array) {
-            $redisClient = new RedisClient ();
-            $redisClient->store($history_key, json_encode($history_data_array));
-        }
-        return ['status' => true, 'msg' => "success"];
-    } catch (\Exception $e) {
-       AppLogger::error(LogLevel::ERROR,$e);
-        return ['status' => false, 'msg' => "error"];
-    }
-}
 
 
 public static function fetch_history($lottery_id, $type): mixed
@@ -85,23 +77,35 @@ public static function fetch_history($lottery_id, $type): mixed
 
         // return json_encode($cached_history);
         $history_draw_period = $redisClient->getLatestDrawPeriod($lottery_id);
-
+        // echo "The Server draw period is: ".$server_draw_period;
+        // echo "The latest history draw period is: ".$history_draw_period;
+        $my = [];
         if ($history_draw_period != $server_draw_period) {
-            $game_types_records          = Database::fetch_all_lottery_ids();
            
+            $game_types_records          = Database::fetch_all_lottery_ids();
             foreach($game_types_records as $seconds_per_issue => $game_types){
-                if (in_array($lottery_id, $game_types)) {
-                     $history_data = self::cache_history($game_types_records[$seconds_per_issue]);
-                     if(!isset($history_data["error"])) $redisClient->updateLatestDrawPeriod($lottery_id,$history_draw_period);
+                foreach($game_types as $i => $game_type){
+                if ($lottery_id == $game_type->lottery_id) {
+                     self::cache_history($game_types_records[$seconds_per_issue]);
+                     if(!isset($cached_history["error"])) $redisClient->updateLatestDrawPeriod($lottery_id,$history_draw_period);
                      break;
                     }
                 }
+                }
+                 $cached_history = $redisClient->fetch($cache_key,true);
             }
         return json_encode($cached_history);
     } catch (\Exception $e) {
        AppLogger::error(LogLevel::ERROR, $e);
-       return json_encode(["error" => "Internal Server Error."]);
+       return json_encode(["error" => "Internal Server Error.$e"]);
     }
 }
 
 }
+
+
+// 1. Connected chain of narration
+// 2. TrustWorthy narrators
+// 3. All narrators are precise in their narrations.
+// 4. Absence of contradiction
+// 5. Absence of hidden defects

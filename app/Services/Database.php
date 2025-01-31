@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Config;
+namespace App\Services;
 
 
 require_once('C:/xampp/htdocs/history/vendor/autoload.php');
@@ -26,12 +26,12 @@ public static function load_db(){
 
     try{
         $dsn = sprintf("mysql:host=%s;dbname=%s", $_ENV['DB_HOST'], $_ENV['DB_NAME']);
-        echo $dsn;
         $db = new PDO($dsn,$_ENV['DB_USER'],$_ENV['DB_PASS']);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
         
         Flight::set('db',$db);
+        return $db;
     }catch(PDOException $e){
          return "Db connection failed: ". $e->getMessage();
     }
@@ -47,18 +47,18 @@ public static function fetch_all_lottery_ids(): array | string {
     $db = Flight::get('db');
 
     // make sure there is a connection 
-    if(empty($db)) return [];
+    if(empty($db)) $db = self::load_db();
     $stmt = $db->prepare("SELECT game_group,seconds_per_issue FROM game_type GROUP BY seconds_per_issue");
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_OBJ);
-    $results['lottery_ids'] = [];
+    // $results['lottery_ids'] = [];
     foreach ($rows as $row){
     $stmt = $db->prepare("SELECT gt_id as lottery_id,game_group,name  FROM game_type WHERE seconds_per_issue = '{$row->seconds_per_issue}'");
     $stmt->execute();
     $gt_id_rows = $stmt->fetchAll();
     foreach($gt_id_rows as $gt_id_row){
         $results["{$row->seconds_per_issue}"][] = $gt_id_row;
-        $results["lottery_ids"]["{$row->seconds_per_issue}"][] = $gt_id_row->lottery_id;
+        // $results["lottery_ids"]["{$row->seconds_per_issue}"][] = $gt_id_row->lottery_id;
     }  
    }
     return $results;
@@ -87,6 +87,7 @@ $stmt->execute();
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$row) {
+  
     return [
         'type' => 'error', 
         'message' => 'Invalid lottery ID', 
@@ -119,6 +120,7 @@ foreach ($results as $item) {
         'period' => substr($item['period'], -4) 
     ];
 }
+
 
 return $response;
 }

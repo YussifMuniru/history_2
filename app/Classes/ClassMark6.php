@@ -4,18 +4,13 @@ namespace App\Classes;
 
 
 
-require_once("../../vendor/autoload.php");
+require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
 
 // import the base class
 use App\Classes\BaseClass;
-// import the database
-use App\Config\Database;
-// import the redis cache
-use App\Config\RedisClient;
-// import the logger service
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
+use App\Storage\Logs\AppLogger;
+use App\Storage\Logs\LogLevel;
 
 
 // create a class for 5D
@@ -59,8 +54,7 @@ public function __construct(object $game_type){
     $this->name          = $game_type->name;
 }
 
-public function winning_number_mark6(array $drawNumbers): array
-{
+public function winning_number_mark6(array $drawNumbers): array {
 
     $history_array = [];
     //code...
@@ -93,7 +87,7 @@ public function sum_of_two_sides_b_s_o_e(array $draw_numbers): array
         $result["b_s_no_tie"] = $sum >= 175 ? "B" : "S";
         $result["o_e"] = $sum >= 175 ? "B" : "S";
         $result[self::WINNING_PERIOD_STR] = $draw_period;
-        $result[self::WINNING_PERIOD_STR]     = implode(",", $item);
+        $result[self::WINNING_NUMBER_STR]     = implode(",", $item);
         array_push($history_array, $result);
     }
 
@@ -112,7 +106,9 @@ public function extra_no_head_tail_no(array $drawNumbers): array
         $draw_period = $draw_obj[self::DRAW_PERIOD_STR];
         $extra_ball = $item[count($item) - 1];
         try {
-            array_push($historyArray, [self::WINNING_NUMBER_STR => $draw_period, self::WINNING_PERIOD_STR => implode(',', $item), "Ball_1" => $item[0], "Ball_2" => $item[1], "Ball_3" => $item[2], "Ball_4" => $item[3], "Ball_5" => $item[4], "Ball_6" => $item[5], "Extra_Ball" => $extra_ball, "head" => $extra_ball[0], "tail" => $extra_ball[1]]);
+            $head  =  isset($extra_ball[0]) ? $extra_ball[0] : "";
+            $tail  =  isset($extra_ball[1]) ? $extra_ball[1] : "";
+            array_push($historyArray, [self::WINNING_PERIOD_STR => $draw_period, self::WINNING_NUMBER_STR => implode(',', $item), "Ball_1" => $item[0], "Ball_2" => $item[1], "Ball_3" => $item[2], "Ball_4" => $item[3], "Ball_5" => $item[4], "Ball_6" => $item[5], "Extra_Ball" => $extra_ball, "head" => $head , "tail" => $tail]);
         } catch (\Exception $e) {
             AppLogger::error(LogLevel::Error,$e);
             array_push($historyArray, ["draw_period" => $draw_period, 'winning' => implode(',', $item), "Ball_1" => "", "Ball_2" => '', "Ball_3" => '', "Ball_4" => '', "Ball_5" => '', "Ball_6" =>  '', "Extra_Ball" => '', "head" => '', "tail" => '']);
@@ -174,11 +170,11 @@ function form_extra_no(array $drawNumbers): array
 
             $value       = $drawNumber[self::DRAW_NUMBER_STR];
             $draw_period = $drawNumber[self::DRAW_PERIOD_STR];
-            $extra_ball = $value[count($value) - 1];
-
-            $res = [self::WINNING_PERIOD_STR => $draw_period, self::WINNING_NUMBER_STR => implode(',', $value), "Ball_1" => $value[0], "Ball_2" => $value[1], "Ball_3" => $value[2], "Ball_4" => $value[3], "Ball_5" => $value[4], "Ball_6" => $value[5], "Extra_Ball" => $extra_ball];
-            $res["b_s"] = (intval($extra_ball) >= 1 && intval($extra_ball) <= 24) ? "S" : "B";
-            $res["o_e"]  = (intval($extra_ball) % 2 === 1) ?  "O" : "E";
+            $extra_ball =  $value[count($value) - 1];
+            $extra_ball = intval($extra_ball);
+            $res = [self::WINNING_PERIOD_STR => $draw_period, self::WINNING_NUMBER_STR => implode(',', $value), "Ball_1" => $value[0], "Ball_2" => $value[1], "Ball_3" => $value[2], "Ball_4" => $value[3], "Ball_5" => $value[4], "Ball_6" => $value[5], "Extra_Ball" => "{$extra_ball}"];
+            $res["b_s"]  = $extra_ball == 49 ? "Tie" : (($extra_ball >= 1 && $extra_ball <= 24) ? "S" : "B");
+            $res["o_e"]  = $extra_ball == 49 ? "Tie" : (($extra_ball % 2 === 1) ?  "O" : "E");
         } catch (\Exception $e) {
             AppLogger::error(LogLevel::Error, $e);
             $res = [self::WINNING_PERIOD_STR => $draw_period, self::WINNING_NUMBER_STR => implode(',', $value), "Ball_1" => '', "Ball_2" => '', "Ball_3" => '', "Ball_4" => '', "Ball_5" => '', "Ball_6" => '', "Extra_Ball" => '', "b_s" => '', "o_e" => ''];
@@ -226,11 +222,11 @@ public function form_extra_tail(array $drawNumbers): array
             $draw_period = $drawNumber[self::DRAW_PERIOD_STR];
             $extra_ball = $value[count($value) - 1];
             $tail = str_split($extra_ball)[1];
-            $b_s  = (intval($tail) >= 0 && intval($tail) <= 4) ? "S" : "B";
+            $b_s  = intval($extra_ball) === 49 ? "Tie" :((intval($tail) >= 0 && intval($tail) <= 4) ? "S" : "B");
             $o_e  = (intval($extra_ball) % 2 === 1) ?  "O" : "E";
-            $form = ["b" => "Big", "s" => "Small", "o" => "Odd", "e" => "Even"];
+            $form = ["b" => "Big", "s" => "Small", "o" => "Odd", "e" => "Even","tie" => "Tie"];
 
-            $result[] = [self::WINNING_PERIOD_STR => $draw_period, "Ball_1" => $value[0], "Ball_2" => $value[1], "Ball_3" => $value[2], "Ball_4" => $value[3], "Ball_5" => $value[4], "Ball_6" => $value[5], "Extra_Ball" => $extra_ball, "tail" => $tail, "form" => intval($extra_ball) === 49 ? "Tie" : $form[strtolower($b_s)] . " " . $form[strtolower($o_e)]];
+            $result[] = [self::WINNING_PERIOD_STR => $draw_period, "Ball_1" => $value[0], "Ball_2" => $value[1], "Ball_3" => $value[2], "Ball_4" => $value[3], "Ball_5" => $value[4], "Ball_6" => $value[5], "Extra_Ball" => $extra_ball, "tail" => $tail, "form" => $form[strtolower($b_s)] . " " . $form[strtolower($o_e)]];
         } catch (\Throwable $e) {
             AppLogger::error(LogLevel::Error,$e);
             $result[] = [self::WINNING_PERIOD_STR => $draw_period, self::WINNING_NUMBER_STR => implode(',', $value), "Ball_1" => '', "Ball_2" =>  '', "Ball_3" =>  '', "Ball_4" =>  '', "Ball_5" =>  '', "Ball_6" =>  '', "Extra_Ball" =>  '', "tail" =>   '', "form" => ''];
@@ -312,16 +308,16 @@ public function color_balls(array $drawNumbers, int $lower_limit = 4): array
             $extra_ball = $drawNumber[count($drawNumber) - 1];
             $color = "";
             if (in_array($extra_ball, self::ZODIAC_RED_BALLS)) {
-                $color = "red";
+                $color = "Red";
             } elseif (in_array($extra_ball, self::ZODIAC_BLUE_BALLS)) {
-                $color = "blue";
+                $color = "Blue";
             } elseif (in_array($extra_ball, self::ZODIAC_GREEN_BALLS)) {
-                $color = "green";
+                $color = "Green";
             }
             $b_s = intval($extra_ball) == 49 ? "Tie" : ((intval($extra_ball) <= $lower_limit) ? "S" : "B");
             $o_e  = (intval($extra_ball) % 2 === 1) ?  "O" : "E";
-            $form = ["b" => "Big", "s" => "Small", "o" => "Odd", "e" => "Even"];
-            $res = [self::WINNING_PERIOD_STR => $draw_period, "Ball_1" => $drawNumber[0], "Ball_2" => $drawNumber[1], "Ball_3" => $drawNumber[2], "Ball_4" => $drawNumber[3], "Ball_5" => $drawNumber[4], "Ball_6" => $drawNumber[5], "Extra_Ball" => $extra_ball, "color" => $color, "form" => intval($extra_ball) === 49 ? "Tie" : $form[strtolower($b_s)] . " " . $form[strtolower($o_e)]];
+            $form = ["b" => "Big", "s" => "Small", "o" => "Odd", "e" => "Even","tie" => "Tie"];
+            $res = [self::WINNING_PERIOD_STR => $draw_period, "Ball_1" => $drawNumber[0], "Ball_2" => $drawNumber[1], "Ball_3" => $drawNumber[2], "Ball_4" => $drawNumber[3], "Ball_5" => $drawNumber[4], "Ball_6" => $drawNumber[5], "Extra_Ball" => $extra_ball, "color" => $color, "form"   => $form[strtolower($b_s)] . " " . $form[strtolower($o_e)]];
         } catch (\Throwable $th) {
             //throw $th;
             $res = [self::WINNING_PERIOD_STR => $draw_period, "Ball_1" => '', "Ball_2" => '', "Ball_3" => '', "Ball_4" => '', "Ball_5" => '', "Ball_6" => '', "Extra_Ball" => '', "color" => '', "form" => ''];
@@ -370,7 +366,6 @@ public function sum_extra_n_ball_no(array $drawNumbers): array
         try {
             $value       = $draw_number[self::DRAW_NUMBER_STR];
             $draw_period = $draw_number[self::DRAW_PERIOD_STR];
-            $extra_ball = intval($value[count($value) - 1]);
 
             $sum  = array_sum($value);
             $b_s  = $sum  == 175 ? "Tie": (($sum < 175) ? "S" : "B");
@@ -424,16 +419,18 @@ public function sum_zodiac(Array $drawNumbers) : array {
         $drawNumber  = $item[self::DRAW_NUMBER_STR];
         $draw_period = $item[self::DRAW_PERIOD_STR];
         foreach ($drawNumber as   $single_draw) {
-          
-           foreach ($zodiacs as $key => $value) {
+            foreach ($zodiacs as $key => $value) {
                 if(in_array($single_draw,$value)){
                      $res[] = $key;
                 }
            }
         }
-        
+
+        $tail = self::get_tail($drawNumber);
+        $sum  =  array_sum(array_map("intval", $drawNumber));
         $unique_zodiacs = count(array_unique($res));
-        $historyArray[] = [self::WINNING_NUMBER_STR => $draw_period ,"Ball_1" => $drawNumber[0], "Ball_2" => $drawNumber[1], "Ball_3" => $drawNumber[2], "Ball_4" => $drawNumber[3], "Ball_5" => $drawNumber[4], "Ball_6" => $drawNumber[5], "Extra_Ball" => $drawNumber[6],"no" => $unique_zodiacs, "form"=> $unique_zodiacs % 2 === 0 ? "Even" : "Odd"];
+        // $historyArray[] = [self::WINNING_NUMBER_STR => $draw_period ,"Ball_1" => $drawNumber[0], "Ball_2" => $drawNumber[1], "Ball_3" => $drawNumber[2], "Ball_4" => $drawNumber[3], "Ball_5" => $drawNumber[4], "Ball_6" => $drawNumber[5], "Extra_Ball" => $drawNumber[6],"tail" => $tail,"no" => $unique_zodiacs, "form"=> $unique_zodiacs % 2 === 0 ? "Even" : "Odd"];
+        $historyArray[] = ["draw_period" => $draw_period, "Ball_1" => $drawNumber[0], "Ball_2" => $drawNumber[1], "Ball_3" => $drawNumber[2], "Ball_4" => $drawNumber[3], "Ball_5" => $drawNumber[4], "Ball_6" => $drawNumber[5], "Extra_Ball" => $drawNumber[6], "no" => $unique_zodiacs,'form' => $unique_zodiacs % 2 === 0 ? "Even" : "Odd", "o_e" => $unique_zodiacs % 2 === 0 ? "E" : "O","tail" => $tail , 'sum_b_s' => self::b_s_with_tie($sum),'sum_b_s_no_tie' => self::b_s_with_tie($sum,174,175),"sum_o_e" => $sum % 2 === 0 ? "E" : "O",];
     }
     return $historyArray;
 
@@ -504,19 +501,18 @@ public function board_game( Array $draw_numbers){
         $draw_period = $item[self::DRAW_PERIOD_STR];
         $extra_ball = $draw_number[count($draw_number) - 1];
         
-        array_push($history_array, [self::WINNING_NUMBER_STR => $draw_period,"Ball_1" => $draw_number[0], "Ball_2" => $draw_number[1], "Ball_3" => $draw_number[2], "Ball_4" => $draw_number[3], "Ball_5" => $draw_number[4], "Ball_6" => $draw_number[5], "Extra_Ball" => $draw_number[6],"b_s" =>  $extra_ball <= 24  ? 'Small' : 'big' , 'o_e' => ($extra_ball % 2 == 0)  ? 'Pair' : 'One','sum' => $extra_ball]);
+        array_push($history_array, [self::WINNING_PERIOD_STR => $draw_period,"Ball_1" => $draw_number[0], "Ball_2" => $draw_number[1], "Ball_3" => $draw_number[2], "Ball_4" => $draw_number[3], "Ball_5" => $draw_number[4], "Ball_6" => $draw_number[5], "Extra_Ball" => $draw_number[6],"b_s" =>  $extra_ball <= 24  ? 'Small' : 'big' , 'o_e' => ($extra_ball % 2 == 0)  ? 'Pair' : 'One','sum' => $extra_ball]);
     }
     return $history_array;
     }catch(\Exception $e){
         AppLogger::error(LogLevel::ERROR, $e);
-        return [self::WINNING_NUMBER_STR => $draw_period ,"Ball_1" => "", "Ball_2" => "", "Ball_3" => "", "Ball_4" => "", "Ball_5" => "", "Ball_6" => "", "Extra_Ball" => "","no" => "", "form"=> ""];
+        return [self::WINNING_PERIOD_STR => $draw_period ,"Ball_1" => "", "Ball_2" => "", "Ball_3" => "", "Ball_4" => "", "Ball_5" => "", "Ball_6" => "", "Extra_Ball" => "","no" => "", "form"=> ""];
     }
  
  }
 
 // Odd_Even Big_Small
 public function std(array $drawNumber): array{
-    $zodiacs = self::generate_zodiac_numbers();
     $result = [
        
         'extra_no'              => ["extra_no"     =>    $this->winning_number_mark6(drawNumbers: $drawNumber), "head_tail_no" => $this->extra_no_head_tail_no($drawNumber)],
@@ -526,20 +522,8 @@ public function std(array $drawNumber): array{
         'one_zodiac'            => $this->winning_number_mark6($drawNumber),
         'ball_color'            => $this->winning_number_mark6($drawNumber),
         "extra_n_ball_no"       => ["sum" => $this->sum_extra_n_ball_no($drawNumber), "tail_no" => $this->winning_number_mark6($drawNumber), "mismatch" => $this->winning_number_mark6($drawNumber), "two_consec_tail" => $this->two_consec_tail($drawNumber), "three_consec_tail" => $this->two_consec_tail($drawNumber), "four_consec_tail" => $this->two_consec_tail($drawNumber), "five_consec_tail" => $this->two_consec_tail($drawNumber), 'two_no' =>  $this->winning_number_mark6($drawNumber),  'win_extra_no' =>  $this->winning_number_mark6($drawNumber)],
-        'extra_n_ball_zodiac'   => ["one_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "two_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "three_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "four_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "five_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "sum_zodiac" => $this->sum_zodiac($drawNumber, $zodiacs), "o_e_sum_zodiac" => $this->sum_zodiac($drawNumber)],
+        'extra_n_ball_zodiac'   => ["one_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "two_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "three_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "four_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "five_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "sum_zodiac" => $this->sum_zodiac($drawNumber), "o_e_sum_zodiac" => $this->sum_zodiac($drawNumber)],
         'extra_n_ball_color'    => $this->extra_n_ball_color($drawNumber),
-        'conv'                  => $this->winning_number_mark6($drawNumber),
-        'extra_no_2_sides'      => ["two_sides" => $this->form_extra_no($drawNumber), "no" => $this->winning_number_mark6($drawNumber), "all_color" => $this->color_balls($drawNumber, 24), "special_zodiac_h_t" => $this->extra_no_head_tail_no($drawNumber), "combo_zodiac" => $this->winning_number_mark6($drawNumber), "five_elements" =>  $this->five_elements($drawNumber,)],
-        'ball_no_2_sides'       => ["pick_1_ball_no" => $this->winning_number_mark6($drawNumber), "ball_no_1_1" => $this->winning_number_mark6($drawNumber), "one_zodiac_color_balls" => $this->extra_n_ball_color($drawNumber)],
-        'specific_no'           => ["fixed_place_ball_1" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_2" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_3" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_4"    => $this->winning_number_mark6($drawNumber), "fixed_place_ball_5" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_6" => $this->winning_number_mark6($drawNumber)],
-        'row_zodiac_row_tail'   => ["two_consec_zodiac" =>  $this->winning_number_mark6($drawNumber), "three_consec_zodiac" => $this->winning_number_mark6($drawNumber), "four_consec_zodiac" => $this->winning_number_mark6($drawNumber), "five_consec_zodiac" => $this->winning_number_mark6($drawNumber), "second_consec_tail_no" => $this->two_consec_tail($drawNumber), "third_consec_tail_no" => $this->two_consec_tail($drawNumber), "fourth_consec_tail_no" => $this->two_consec_tail($drawNumber), "five_consec_tail_no" => $this->two_consec_tail($drawNumber)],
-        "row_no"                => ["win_2_3" =>      $this->winning_number_mark6($drawNumber), "win_3_3" => $this->winning_number_mark6($drawNumber), "win_2_2" =>      $this->winning_number_mark6($drawNumber), "two_no"  => $this->winning_number_mark6($drawNumber), "win_extra_no" => $this->winning_number_mark6($drawNumber), "win_4_4" => $this->winning_number_mark6($drawNumber)],
-        "zodiac_and_tail"       => $this->sum_zodiac($drawNumber, ),
-        "sum"                   => $this->sum_zodiac($drawNumber, ),
-        "optional"              => $this->winning_number_mark6($drawNumber),
-        "mismatch"              => $this->winning_number_mark6($drawNumber),
-
-
     ];
 
     return $result;
@@ -549,23 +533,15 @@ public function std(array $drawNumber): array{
 public function two_sides(array $drawNumber): array
 {
 
-    global $zodiacs;
-    
-
-    $zodiacs = self::generate_zodiac_numbers();
-   
-     $elements = self::FIVE_ELEMENTS;
-
-
-    return [
+     return [
         'conv'                 => $this->winning_number_mark6($drawNumber),
-        'extra_no_2_sides'     => ["two_sides" => $this->form_extra_no($drawNumber), "no" => $this->winning_number_mark6($drawNumber), "all_color" => $this->color_balls($drawNumber, 24), "special_zodiac_h_t" => $this->extra_no_head_tail_no($drawNumber), "combo_zodiac" => $this->winning_number_mark6($drawNumber), "five_elements" =>  $this->five_elements($drawNumber,$elements)],
+        'extra_no_2_sides'     => ["two_sides" => $this->form_extra_no($drawNumber), "no" => $this->winning_number_mark6($drawNumber), "all_color" => $this->color_balls($drawNumber, 24), "special_zodiac_h_t" => $this->extra_no_head_tail_no($drawNumber), "combo_zodiac" => $this->winning_number_mark6($drawNumber), "five_elements" =>  $this->five_elements($drawNumber)],
         'ball_no_2_sides'      => ["pick_1_ball_no" => $this->winning_number_mark6($drawNumber), "ball_no_1_1" => $this->winning_number_mark6($drawNumber), "one_zodiac_color_balls" => $this->extra_n_ball_color($drawNumber)],
         'specific_no'          => ["fixed_place_ball_1" =>  $this->winning_number_mark6($drawNumber), "fixed_place_ball_2" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_3" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_4" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_5" => $this->winning_number_mark6($drawNumber), "fixed_place_ball_6" => $this->winning_number_mark6($drawNumber)],
         'row_zodiac_row_tail'  => ["two_consec_zodiac" =>   $this->winning_number_mark6($drawNumber), "three_consec_zodiac" => $this->winning_number_mark6($drawNumber), "four_consec_zodiac" => $this->winning_number_mark6($drawNumber), "five_consec_zodiac" => $this->winning_number_mark6($drawNumber), "second_consec_tail_no" => $this->two_consec_tail($drawNumber), "third_consec_tail_no" => $this->two_consec_tail($drawNumber), "fourth_consec_tail_no" => $this->two_consec_tail($drawNumber), "five_consec_tail_no" => $this->two_consec_tail($drawNumber)],
         "row_no"               => ["win_2_3" =>       $this->winning_number_mark6($drawNumber), "win_3_3" => $this->winning_number_mark6($drawNumber), "win_2_2" =>      $this->winning_number_mark6($drawNumber), "two_no" =>  $this->winning_number_mark6($drawNumber), "win_extra_no" => $this->winning_number_mark6($drawNumber), "win_4_4" => $this->winning_number_mark6($drawNumber)],
-        "zodiac_and_tail"      => $this->sum_zodiac($drawNumber, $zodiacs),
-        "sum"                  => $this->sum_zodiac($drawNumber, $zodiacs),
+        "zodiac_and_tail"      => $this->sum_zodiac($drawNumber),
+        "sum"                  => $this->sum_zodiac($drawNumber),
         "optional"             => $this->winning_number_mark6($drawNumber),
         "mismatch"             => $this->winning_number_mark6($drawNumber),
     ];

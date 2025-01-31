@@ -8,18 +8,10 @@ require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
 
 use App\Storage\Cache\CacheHelper;
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
-
-// import React EventLoop
+use App\Storage\Logs\AppLogger;
 use React\EventLoop\Loop;
-
-// import the database
-use App\Config\Database;
-
-
-// import the database
-use App\Config\RedisClient;
+use App\Services\Database;
+use App\Services\RedisClient;
 
 
 
@@ -46,7 +38,6 @@ class Engine {
         // Fetch all lottery ids and their respective seconds per issue from the database
         $this->game_type_records = Database::fetch_all_lottery_ids();
 
-        print_r($this->game_type_records);
     }
         
     public function start(){
@@ -63,19 +54,25 @@ class Engine {
 
         echo date('s') . PHP_EOL;
         echo time() . PHP_EOL;
+        $start_time = microtime(true);
+        $total_time = 0;
         echo microtime(true) . PHP_EOL;
 
         foreach($this->game_type_records as $seconds_per_issue => $game_types){
             if($seconds_per_issue !== "lottery_ids"){
             if(($time % $seconds_per_issue) == 0){
+            $total_time = $total_time + (microtime(true) -  $start_time);
             CacheHelper::cache_history($game_types);
             $cache_status[] = $seconds_per_issue;
+
             }
         }
         }
         foreach($cache_status as $cache_strings){
             echo "History cached for {". $cache_strings."} seconds.".PHP_EOL;
+            
         }
+       if(!empty($cache_status)) echo "Script Execution Time: {$total_time}".PHP_EOL;
     });
 
     #start the loop

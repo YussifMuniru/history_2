@@ -1,11 +1,14 @@
 <?php
-
-use App\Middleware\AuthMiddleware;
-use App\Services\App;
+header("Access-Control-Allow-Origin: *");
+header('Access-Control-Allow-Methods: GET, POST');
+header('Content-Type: application/json, text/event-stream');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 
 
 require_once("vendor/autoload.php");
 
+use App\Middleware\AuthMiddleware;
+use App\Services\App;
 use App\Storage\Cache\CacheHelper;
 use App\Utils\Utils;
 

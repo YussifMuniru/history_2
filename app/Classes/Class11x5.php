@@ -4,18 +4,15 @@ namespace App\Classes;
 
 
 
-require_once("../../vendor/autoload.php");
+require_once('C:/xampp/htdocs/history/vendor/autoload.php');
 
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+    // Throw an Exception with the error message and details
+    throw new \Exception("$errstr in $errfile on line $errline", $errno);
+});
 
 // import the base class
 use App\Classes\BaseClass;
-// import the database
-use App\Config\Database;
-// import the redis cache
-use App\Config\RedisClient;
-// import the logger service
-use App\Logger\AppLogger;
-use App\Logger\LogLevel;
 
 
 // create a class for 5D
@@ -26,7 +23,7 @@ class Class11x5 extends BaseClass{
      protected $game_group ;
      protected $name ;
 
-
+     protected $has_fantan = false;
 
 public function __construct(object $game_type){
     $this->lottery_id    = $game_type->lottery_id;
@@ -35,16 +32,34 @@ public function __construct(object $game_type){
 }
 
 
-public function eleven_5(Array $draw_numbers)  : Array { 
-   
+
+public function eleven_5(array $draw_numbers,int $index = 0,int $length = 5): array {
+        
     $results = [];
     foreach ($draw_numbers as $value) {
         $draw_number = $value[self::DRAW_NUMBER_STR];
         $draw_period = $value[self::DRAW_PERIOD_STR];
-        array_push($results,[self::DRAW_PERIOD_STR=>$draw_period,self::DRAW_NUMBER_STR => implode(",",$draw_number)]); 
+        array_push($results, [self::WINNING_PERIOD_STR => $draw_period,self::WINNING_NUMBER_STR => implode(",", $draw_number),"sum" =>  array_sum(array_slice($draw_number,$index,$length))]);
     }
+
     return $results;
-}// return the wnning number:format ["winning"=>"1,2,3,4,5"]
+
+}// end of eleven_5(): return the wnning number:format ["winning"=>"1,2,3,4,5"]
+
+
+
+
+public function fun (array $draw_numbers){
+       $results = [];
+    foreach ($draw_numbers as $value) {
+        $draw_number = $number_sort = $value[self::DRAW_NUMBER_STR];
+        $draw_period = $value[self::DRAW_PERIOD_STR];
+        sort($number_sort);
+        array_push($results, [self::WINNING_NUMBER_STR => $draw_period,self::WINNING_PERIOD_STR => implode(",", $draw_number),"mid" =>  $number_sort[2]]);
+    }
+
+    return $results;
+}
 
 public function two_sides_2sides(array $draw_results): array
 {
@@ -89,14 +104,19 @@ public function board_game(Array $draw_numbers){
 
 // this will generate the history for std
 public function std(array $drawNumbers):array{ 
-    return [
-            'first_three'           => $this->eleven_5($drawNumbers),
-            'first_two'             => $this->eleven_5($drawNumbers),
-            'any_place'             => $this->eleven_5($drawNumbers),
-            'fixed_place'           => $this->eleven_5($drawNumbers),
-            'pick'                  => $this->eleven_5($drawNumbers),
-            'fun'                   => $this->eleven_5($drawNumbers),
+   
+        
+        $history = [
+            'first_three'           => $this->eleven_5($drawNumbers,0,3),
+            'first_two'             => $this->eleven_5($drawNumbers,0,2),
+            'any_place'             => $this->eleven_5($drawNumbers,0,3),
+            'fixed_place'           => $this->eleven_5($drawNumbers,0,3),
+            'pick'                  => $this->eleven_5($drawNumbers,0,3),
+            'fun'                   => $this->fun($drawNumbers),
          ];
+         return $history;
+   
+    
  }
 
 public function two_sides_first_group(Array $draw_numbers,int $start_index,int $end_index) : array {
@@ -124,16 +144,15 @@ public function two_sides_first_group(Array $draw_numbers,int $start_index,int $
         return $history_array;
 }
 
-
 // this will generate the history for two_sides
 public function two_sides(array $drawNumbers):array{ 
-       return [
-                'rapido'           =>  $this->eleven_5($drawNumbers),
-                'two_sides'        =>  $this->two_sides_2sides($drawNumbers),
-                'pick'             =>  ['pick' => $this->eleven_5($drawNumbers) , "first_2" => $this->two_sides_first_group($drawNumbers, 0, 2),
-                "first_3"          =>  $this->two_sides_first_group($drawNumbers, 0, 3)],
-                'straight'         =>  ["first_2" => $this->two_sides_first_group($drawNumbers, 0, 2),"first_3" => $this->two_sides_first_group($drawNumbers, 0, 3)],
-            ];
+    return [
+        'rapido'           =>  $this->eleven_5($drawNumbers),
+        'two_sides'        =>  $this->two_sides_2sides($drawNumbers),
+        'pick'             =>  ['pick' => $this->eleven_5($drawNumbers) , "first_2" => $this->two_sides_first_group($drawNumbers, 0, 2),
+        "first_3"          =>  $this->two_sides_first_group($drawNumbers, 0, 3)],
+        'straight'         =>  ["first_2" => $this->two_sides_first_group($drawNumbers, 0, 2),"first_3" => $this->two_sides_first_group($drawNumbers, 0, 3)],
+        ];
 
 }
 
